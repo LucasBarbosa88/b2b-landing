@@ -1,3 +1,65 @@
+// Language Handling (Must be at the top or very early)
+let currentLang = localStorage.getItem('site_lang') || 'en';
+
+function updateContent() {
+    const langData = translations[currentLang];
+    
+    // Update simple text elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const keys = key.split('.');
+        let value = langData;
+        
+        // Navigate through the object
+        for (const k of keys) {
+            value = value?.[k];
+        }
+        
+        if (value) {
+            // For inputs/textareas, update placeholder
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.placeholder = value;
+            } else if (el.tagName === 'IMG') {
+                el.alt = value;
+            } else {
+                // If the element has children (like svg icons in buttons), we need to be careful not to wipe them
+                // But for this refined implementation, we wrapped text in spans where necessary for complex buttons.
+                // For simple elements, textContent is fine.
+                // If the value contains HTML entities (like &copy;), we used innerHTML in the initial load, so let's stick to innerHTML for safety or textContent if strict.
+                // Given the copyright usage, innerHTML is safer for entities.
+                el.innerHTML = value; 
+            }
+        }
+    });
+
+    // Update document title and meta description
+    if (langData.meta) {
+        document.title = langData.meta.title;
+        document.querySelector('meta[name="description"]')?.setAttribute('content', langData.meta.description);
+    }
+
+    // Update Language Toggle Button State
+    const toggleBtn = document.getElementById('langToggle');
+    if (toggleBtn && langData.nav.langConfig) {
+        // We set the text to the *current* language's "switch to" text (e.g. show "PT" when in EN)
+        // actually looking at translations.js, nav.langConfig.text for 'en' is "🇧🇷 PT" which is correct (switch TO pt)
+        toggleBtn.textContent = langData.nav.langConfig.text; 
+    }
+}
+
+// Global function to toggle language
+window.toggleLanguage = () => {
+    currentLang = currentLang === 'en' ? 'pt' : 'en';
+    localStorage.setItem('site_lang', currentLang);
+    updateContent();
+};
+
+// Initialize language on load
+document.addEventListener('DOMContentLoaded', () => {
+    updateContent();
+});
+
+
 // Navbar scroll effect
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
